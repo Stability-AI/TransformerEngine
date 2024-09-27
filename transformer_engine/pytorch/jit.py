@@ -4,23 +4,28 @@
 
 """NVFuser functions and JIT utilities"""
 import os
+import sys
 from typing import Callable, Optional, Tuple
 
 import torch
 
+# Check python version is less than 3.12 since Dynamo is not supported on Python3.12+
+# which is incompatible with the Stability AI internal torch-2.3-cu123 wheel.
+is_py_dynamo_compat = sys.version_info < (3, 12)
+
 jit_fuser = torch.jit.script
-if torch.__version__ >= "2" and bool(int(os.getenv("NVTE_TORCH_COMPILE", "1"))):
+if torch.__version__ >= "2" and bool(int(os.getenv("NVTE_TORCH_COMPILE", "1"))) and is_py_dynamo_compat:
     jit_fuser = torch.compile
 
 # See: https://github.com/NVIDIA/TransformerEngine/issues/597
 dropout_fuser = torch.jit.script
-if torch.__version__ >= "2.2" and bool(int(os.getenv("NVTE_TORCH_COMPILE", "1"))):
+if torch.__version__ >= "2.2" and bool(int(os.getenv("NVTE_TORCH_COMPILE", "1"))) and is_py_dynamo_compat:
     dropout_fuser = torch.compile
 
 # Decorator to disable Torch Dynamo
 # See: https://github.com/NVIDIA/TransformerEngine/issues/308
 no_torch_dynamo = lambda recursive=True: lambda func: func
-if torch.__version__ >= "2":
+if torch.__version__ >= "2" and is_py_dynamo_compat:
     import torch._dynamo
 
     if torch.__version__ >= "2.1":

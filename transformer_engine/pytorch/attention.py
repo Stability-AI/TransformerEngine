@@ -85,6 +85,8 @@ from transformer_engine.pytorch.export import is_in_onnx_export_mode
 from transformer_engine.pytorch.jit import jit_fuser, no_torch_dynamo
 from transformer_engine.pytorch.graph import is_graph_capturing
 
+import sys
+torch_compile = torch.compile if sys.version_info < (3, 12) else nullcontext
 
 _NVTE_FLASH_ATTN = int(os.getenv("NVTE_FLASH_ATTN", "1"))
 _NVTE_FUSED_ATTN = int(os.getenv("NVTE_FUSED_ATTN", "1"))
@@ -1165,7 +1167,7 @@ def _get_full_cu_seqlens(
     return _cu_seqlens_cache[(batch_size, max_seqlen)]
 
 
-@torch.compile
+@torch_compile
 def pack_tensor(
     indices: torch.Tensor,
     tensor: torch.Tensor,
@@ -1188,7 +1190,7 @@ def pack_tensor(
     return packed
 
 
-@torch.compile
+@torch_compile
 def pack_2_tensors(
     indices: torch.Tensor,
     t1: torch.Tensor,
@@ -1202,7 +1204,7 @@ def pack_2_tensors(
     return t1_packed, t2_packed
 
 
-@torch.compile
+@torch_compile
 def pack_3_tensors(
     indices: torch.Tensor,
     t1: torch.Tensor,
@@ -1218,7 +1220,7 @@ def pack_3_tensors(
     return t1_packed, t2_packed, t3_packed
 
 
-@torch.compile
+@torch_compile
 def unpack_tensor(
     indices: torch.Tensor,
     dim0: int,
@@ -1240,7 +1242,7 @@ def unpack_tensor(
     return unpacked
 
 
-@torch.compile
+@torch_compile
 def unpack_2_tensors(
     indices: torch.Tensor,
     dim0: int,
@@ -1255,7 +1257,7 @@ def unpack_2_tensors(
     return t1_unpacked, t2_unpacked
 
 
-@torch.compile
+@torch_compile
 def unpack_3_tensors(
     indices: torch.Tensor,
     dim0: int,
@@ -2951,7 +2953,7 @@ class AttnFuncWithCPAndKVP2P(torch.autograd.Function):
         )
 
 
-@torch.compile
+@torch_compile
 def get_seq_chunk_ids_for_reordering(cp_size, device, to_contiguous):
     """
     Context parallelism assigns two discontiguous sequence chunks to each GPU for load balancing.
@@ -3396,7 +3398,7 @@ class AttnFuncWithCPAndKVAllGather(torch.autograd.Function):
         )
 
 
-@torch.compile
+@torch_compile
 def reorder_seq_chunks_for_a2a(x, chunk_ids_for_a2a, seq_dim, cp_size, before_attn):
     """Reorder sequence chunk for A2A communication."""
     if before_attn:
